@@ -28,15 +28,21 @@ const mensagensAleatorias = [
 ];
 
 client.on('clientReady', () => {
-  console.log(`Opa, ${client.user.tag} tá online!`);
-  
-  setInterval(() => {
-    const canal = client.channels.cache.find(c => c.name === 'geral');
-    if (canal) {
-      const mensagem = mensagensAleatorias[Math.floor(Math.random() * mensagensAleatorias.length)];
-      canal.send(mensagem);
-    }
-  }, 300000); 
+    console.log(`Opa, ${client.user.tag} tá online!`);
+
+    setInterval(() => {
+        console.log('Tentando enviar uma mensagem...');
+
+        const canal = client.channels.cache.find(c => c.name === 'geral');
+
+        if (canal) {
+            console.log('Canal "geral" encontrado!');
+            const mensagem = mensagensAleatorias[Math.floor(Math.random() * mensagensAleatorias.length)];
+            canal.send(mensagem);
+        } else {
+            console.log('Canal "geral" não encontrado. Verifique o nome do canal.');
+        }
+    }, 300000); 
 });
 
 client.on('guildMemberAdd', member => {
