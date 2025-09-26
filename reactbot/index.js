@@ -47,7 +47,7 @@ client.on('clientReady', () => {
 client.on('guildMemberAdd', member => {
   const welcomeChannel = member.guild.channels.cache.find(channel => channel.name === 'geral'); 
   if (welcomeChannel) {
-    welcomeChannel.send(`E aí, ${member}! Bem-vindo ao servidor. Dá uma olhada no canal #módulos-do-curso pra começar!`);
+    welcomeChannel.send(`E aí, ${member}! Bem-vindo ao servidor. Dá uma olhada no canal 'Fundamentos'!`);
   }
 });
 
