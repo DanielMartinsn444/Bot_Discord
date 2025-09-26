@@ -1,19 +1,16 @@
-
 require('dotenv').config();
 
-
 const { Client, GatewayIntentBits } = require('discord.js');
-
+const http = require('http'); // <--- AQUI!
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers, 
+    GatewayIntentBits.GuildMembers,
   ],
 });
-
 
 const mensagensAleatorias = [
   "Olá! Posso ajudar?",
@@ -30,11 +27,9 @@ const mensagensAleatorias = [
   "Curiosidade: a primeira versão do React foi lançada em 2013!",
 ];
 
-
 client.on('clientReady', () => {
   console.log(`Opa, ${client.user.tag} tá online!`);
   
- 
   setInterval(() => {
     const canal = client.channels.cache.find(c => c.name === 'geral');
     if (canal) {
@@ -51,6 +46,11 @@ client.on('guildMemberAdd', member => {
   }
 });
 
+
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('O bot esta funcionando!');
+}).listen(process.env.PORT || 3000);
 
 const botToken = process.env.TOKEN;
 client.login(botToken);
