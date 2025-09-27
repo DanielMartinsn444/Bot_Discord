@@ -3,6 +3,16 @@ require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const http = require('http');
 
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+});
+// ------------------------------------
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
