@@ -52,6 +52,11 @@ client.on('guildMemberAdd', member => {
   }
 });
 
+client.on('shardDisconnect', () => {
+  console.log('Bot desconectado! Tentando reconectar...');
+  client.login(process.env.TOKEN);
+});
+
 
 http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
