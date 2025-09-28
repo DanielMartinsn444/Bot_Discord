@@ -112,7 +112,11 @@ client.on('messageCreate', message => {
     if (message.author.bot) return;
     const mensagemMinuscula = message.content.toLowerCase();
     if (mensagemMinuscula === '!ajuda' || mensagemMinuscula === '/ajuda') {
-        message.reply('Olá! Eu sou o TheReactBot! Digite /ajuda ou !ajuda caso se sinta perdido! Estou no canal "geral" mas você pode interagir comigo na DM.');
+        message.reply(`Geral: Onde você pode interagir comigo e outros membros.
+ Fundamentos: Aqui você pode revisar todo o conteúdo do curso.
+Música: aqui você pode interagir com o bot, basta digitar "!play (nome da música)" 
+Obs: precisa estar no canal de voz geral para funcionar! 
+`);
     }
     if (message.channel.type === ChannelType.DM) {
         message.reply('Você pode digitar /ajuda para ver o que posso fazer!');
