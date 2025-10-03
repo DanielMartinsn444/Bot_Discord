@@ -221,8 +221,9 @@ dê uma olhada nos canais abaixo:
     if (mensagemMinuscula === '!convite' || mensagemMinuscula === '/convite') {
         
         if (message.guild && message.member) {
-          
-            const temPermissao = message.member.permissions.has(PermissionsBitField.Flags.Administrator) || message.member.id === message.guild.ownerId;
+            
+           
+            const temPermissao = message.member.permissions.has(PermissionsBitField.Flags.ManageGuild) || message.member.id === message.guild.ownerId;
             
             if (!temPermissao) {
                 return message.reply('Desculpe, este comando é restrito a administradores e ao dono do servidor por motivos de segurança.');
