@@ -217,11 +217,12 @@ dê uma olhada nos canais abaixo:
         return;
     }
     
-  
+ 
     if (mensagemMinuscula === '!convite' || mensagemMinuscula === '/convite') {
-       
+        
         if (message.guild && message.member) {
-            const temPermissao = message.member.permissions.has('MANAGE_GUILD') || message.member.id === message.guild.ownerId;
+            
+            const temPermissao = message.member.permissions.has('ADMINISTRATOR') || message.member.id === message.guild.ownerId;
             
             if (!temPermissao) {
                 return message.reply('Desculpe, este comando é restrito a administradores e ao dono do servidor por motivos de segurança.');
@@ -240,7 +241,7 @@ dê uma olhada nos canais abaixo:
         return;
     }
     
- 
+    
     if (message.channel.type === ChannelType.DM) {
         message.reply('Você pode digitar /ajuda para ver o que posso fazer!');
     }
