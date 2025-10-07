@@ -6,7 +6,7 @@ const http = require('http');
 
 let linkConvitePermanente = null;
 const NOME_DO_CANAL_CONVITE = 'geral'; 
-
+const INTERVALO_RESPOSTAS = 3 * 60 * 60 * 1000;
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
@@ -184,7 +184,7 @@ client.on('clientReady', async () => {
         } else {
             console.log('Canal "geral" não encontrado. Verifique o nome do canal.');
         }
-    }, 10800); 
+    }, INTERVALO_RESPOSTAS); 
 });
 
 client.on('guildMemberAdd', member => {
