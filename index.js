@@ -1,6 +1,5 @@
 require('dotenv').config();
 
-
 const { Client, GatewayIntentBits, ChannelType, PermissionsBitField, EmbedBuilder } = require('discord.js');
 const http = require('http');
 
@@ -148,13 +147,16 @@ function pegarFraseAleatoria() {
 
 
 function iniciarLoopMensagens() {
-    
-    if (loopMensagens) {
-        clearInterval(loopMensagens);
-        console.log(`[LOOP] Intervalo anterior limpo.`);
-    }
+    
+    if (loopMensagens) {
+        clearInterval(loopMensagens);
+        console.log(`[LOOP] Intervalo anterior limpo.`);
+    }
 
-    loopMensagens = setInterval(() => {
+    
+    const horasLegiveis = (intervaloAtualMs / (60 * 60 * 1000)).toFixed(2);
+    
+    loopMensagens = setInterval(() => {
         console.log('Tentando enviar uma mensagem...');
         const canal = client.channels.cache.find(c => c.name === NOME_DO_CANAL_CONVITE);
         if (canal) {
@@ -169,7 +171,7 @@ function iniciarLoopMensagens() {
             console.log(`Canal "${NOME_DO_CANAL_CONVITE}" não encontrado. Verifique o nome do canal.`);
         }
     }, intervaloAtualMs);
-    console.log(`[LOOP] Novo intervalo configurado para ${intervaloAtualMs / 60000} minutos.`);
+    console.log(`[LOOP] Novo intervalo configurado para ${horasLegiveis} horas.`);
 }
 
 client.on('clientReady', async () => {
@@ -207,20 +209,20 @@ client.on('clientReady', async () => {
 client.on('guildMemberAdd', member => {
     const welcomeChannel = member.guild.channels.cache.find(channel => channel.name === NOME_DO_CANAL_CONVITE);
     
-    if (welcomeChannel) {
-        const welcomeEmbed = new EmbedBuilder()
-            .setColor('#61DAFB')
-            .setTitle(`🚀 Bem-vindo(a), ${member.displayName}!`)
-            .setDescription(`E aí, ${member}! Que bom ter você aqui na nossa comunidade React!
-            
+    if (welcomeChannel) {
+        const welcomeEmbed = new EmbedBuilder()
+            .setColor('#61DAFB')
+            .setTitle(`🚀 Bem-vindo(a), ${member.displayName}!`)
+            .setDescription(`E aí, ${member}! Que bom ter você aqui na nossa comunidade React!
+            
 **Onde começar?**
 Dá uma olhada no canal **'Fundamentos'** para revisar o conteúdo do curso e depois interaja no **'Geral'**!`)
-            .setThumbnail(member.user.displayAvatarURL())
-            .addFields(
-                { name: 'Comandos Úteis', value: 'Use **!ajuda** ou **/ajuda** para ver todos os meus comandos.' },
-            )
-            .setTimestamp()
-            .setFooter({ text: 'Seja um(a) mestre React!' });
+            .setThumbnail(member.user.displayAvatarURL())
+            .addFields(
+                { name: 'Comandos Úteis', value: 'Use **!ajuda** ou **/ajuda** para ver todos os meus comandos.' },
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Seja um(a) mestre React!' });
 
         welcomeChannel.send({ embeds: [welcomeEmbed] });
     }
@@ -237,12 +239,15 @@ client.on('messageCreate', message => {
     
     
     if (mensagemMinuscula === '!ajuda' || mensagemMinuscula === '/ajuda') {
+    
         message.reply(`Olá! Eu sou o ReactBot, seu assistente no servidor. 
 
 dê uma olhada nos canais abaixo:
 - Convites: Digite /convite ou !convite (somente admins) para obter o link permanente.
 - Limpeza: Digite !limpar_bot para remover minhas mensagens de spam. (somente admins)
-- **Config**: Use **!settempo [minutos]** para mudar o intervalo de mensagens automáticas. (somente admins)
+- **Config**: Use **!settempo [horas]** para mudar o intervalo de mensagens automáticas. (somente admins)
+    * Ex: \`!settempo 3\` para 3 horas. Use \`!settempo 0.5\` para 30 minutos.
+    * Use \`!settempo reset\` para voltar ao padrão de 3 horas.
 - Geral: Onde você pode interagir comigo e outros membros.
 - Fundamentos: Aqui você pode revisar todo o conteúdo do curso.
 -Música: para ouvir música basta digitar: m!play (nome da música)
@@ -250,37 +255,44 @@ dê uma olhada nos canais abaixo:
 `);
         return;
     }
-    
-  
-    if (mensagemMinuscula.startsWith('!settempo')) {
-     
-        const temPermissao = message.member.permissions.has(PermissionsBitField.Flags.ManageGuild) || message.member.id === message.guild.ownerId;
+    
+  
+    if (mensagemMinuscula.startsWith('!settempo')) {
+     
+        const temPermissao = message.member.permissions.has(PermissionsBitField.Flags.ManageGuild) || message.member.id === message.guild.ownerId;
+        
+        if (!temPermissao) {
+            return message.reply('❌ Você não tem permissão para alterar o tempo de envio. Este comando é restrito a quem pode Gerenciar Servidor.');
+        }
+
+        const args = message.content.split(/\s+/); 
+        
+        const horas = parseFloat(args[1]); 
+        
+       
+        if (args[1] === 'reset') {
+            intervaloAtualMs = INTERVALO_PADRAO_MS;
+            iniciarLoopMensagens();
+            return message.reply(`✅ Intervalo resetado! Agora o bot envia mensagens a cada **3 horas**.`);
+        }
+        
+       
+        if (isNaN(horas) || horas <= 0) {
+            return message.reply('⚠️ Formato inválido. Use **!settempo [horas]** (ex: `!settempo 3`). O valor deve ser um número positivo (maior que 0).');
+        }
+
         
-        if (!temPermissao) {
-            return message.reply('❌ Você não tem permissão para alterar o tempo de envio. Este comando é restrito a quem pode Gerenciar Servidor.');
+        if (horas * 60 * 60 * 1000 < 60000) {
+             return message.reply('🛑 O intervalo mínimo permitido é de **1 minuto** (`!settempo 0.0166`) para não sobrecarregar o Discord.');
         }
 
-        const args = message.content.split(/\s+/); 
-        const minutos = parseInt(args[1]); 
-        
-       
-        if (args[1] === 'reset') {
-            intervaloAtualMs = INTERVALO_PADRAO_MS;
-            iniciarLoopMensagens();
-            return message.reply(`✅ Intervalo resetado! Agora o bot envia mensagens a cada **${INTERVALO_PADRAO_MS / 3600000} horas**.`);
-        }
-        
-       
-        if (isNaN(minutos) || minutos < 1) {
-            return message.reply('⚠️ Formato inválido. Use **!settempo [minutos]** (ex: `!settempo 10` para 10 minutos). O mínimo é 1 minuto.');
-        }
-
-        intervaloAtualMs = minutos * 60 * 1000; 
-        iniciarLoopMensagens();
-        
-        message.reply(`✅ Novo intervalo de mensagens configurado para **${minutos} minutos**! O bot voltará a enviar no novo tempo.`);
-        return;
-    }
+      
+        intervaloAtualMs = horas * 60 * 60 * 1000; 
+        iniciarLoopMensagens();
+        
+        message.reply(`✅ Novo intervalo de mensagens configurado para **${horas} horas**! O bot voltará a enviar no novo tempo.`);
+        return;
+    }
     
     
     if (mensagemMinuscula.startsWith('!limpar_bot')) {
