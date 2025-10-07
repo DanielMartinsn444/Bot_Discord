@@ -1,13 +1,17 @@
 require('dotenv').config();
 
-const { Client, GatewayIntentBits, ChannelType, PermissionsBitField } = require('discord.js');
+
+const { Client, GatewayIntentBits, ChannelType, PermissionsBitField, EmbedBuilder } = require('discord.js');
 const http = require('http');
 
 
 let linkConvitePermanente = null;
 const NOME_DO_CANAL_CONVITE = 'geral'; 
 
-const INTERVALO_RESPOSTAS = 3 * 60 * 60 * 1000; 
+
+let intervaloAtualMs = 3 * 60 * 60 * 1000; 
+const INTERVALO_PADRAO_MS = 3 * 60 * 60 * 1000; 
+let loopMensagens = null;
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
@@ -142,6 +146,32 @@ function pegarFraseAleatoria() {
     return frase;
 }
 
+
+function iniciarLoopMensagens() {
+    
+    if (loopMensagens) {
+        clearInterval(loopMensagens);
+        console.log(`[LOOP] Intervalo anterior limpo.`);
+    }
+
+    loopMensagens = setInterval(() => {
+        console.log('Tentando enviar uma mensagem...');
+        const canal = client.channels.cache.find(c => c.name === NOME_DO_CANAL_CONVITE);
+        if (canal) {
+            try {
+                console.log('Canal "geral" encontrado! Enviando...');
+                const mensagem = pegarFraseAleatoria();
+                canal.send(mensagem);
+            } catch (error) {
+                console.log(`ERRO AO ENVIAR MENSAGEM: ${error.message}`);
+            }
+        } else {
+            console.log(`Canal "${NOME_DO_CANAL_CONVITE}" não encontrado. Verifique o nome do canal.`);
+        }
+    }, intervaloAtualMs);
+    console.log(`[LOOP] Novo intervalo configurado para ${intervaloAtualMs / 60000} minutos.`);
+}
+
 client.on('clientReady', async () => {
     console.log(`Opa, ${client.user.tag} tá online!`);
     
@@ -170,28 +200,29 @@ client.on('clientReady', async () => {
         }
     }
     
-    
-    setInterval(() => {
-        console.log('Tentando enviar uma mensagem...');
-        const canal = client.channels.cache.find(c => c.name === 'geral');
-        if (canal) {
-            try {
-                console.log('Canal "geral" encontrado! Enviando...');
-                const mensagem = pegarFraseAleatoria();
-                canal.send(mensagem);
-            } catch (error) {
-                console.log(`ERRO AO ENVIAR MENSAGEM: ${error.message}`);
-            }
-        } else {
-            console.log('Canal "geral" não encontrado. Verifique o nome do canal.');
-        }
-    }, INTERVALO_RESPOSTAS); 
+  
+    iniciarLoopMensagens(); 
 });
 
 client.on('guildMemberAdd', member => {
-    const welcomeChannel = member.guild.channels.cache.find(channel => channel.name === 'geral');
-    if (welcomeChannel) {
-        welcomeChannel.send(`E aí, ${member}! Bem-vindo ao servidor. Dá uma olhada no canal 'Fundamentos'!`);
+    const welcomeChannel = member.guild.channels.cache.find(channel => channel.name === NOME_DO_CANAL_CONVITE);
+    
+    if (welcomeChannel) {
+        const welcomeEmbed = new EmbedBuilder()
+            .setColor('#61DAFB')
+            .setTitle(`🚀 Bem-vindo(a), ${member.displayName}!`)
+            .setDescription(`E aí, ${member}! Que bom ter você aqui na nossa comunidade React!
+            
+**Onde começar?**
+Dá uma olhada no canal **'Fundamentos'** para revisar o conteúdo do curso e depois interaja no **'Geral'**!`)
+            .setThumbnail(member.user.displayAvatarURL())
+            .addFields(
+                { name: 'Comandos Úteis', value: 'Use **!ajuda** ou **/ajuda** para ver todos os meus comandos.' },
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Seja um(a) mestre React!' });
+
+        welcomeChannel.send({ embeds: [welcomeEmbed] });
     }
 });
 
@@ -211,6 +242,7 @@ client.on('messageCreate', message => {
 dê uma olhada nos canais abaixo:
 - Convites: Digite /convite ou !convite (somente admins) para obter o link permanente.
 - Limpeza: Digite !limpar_bot para remover minhas mensagens de spam. (somente admins)
+- **Config**: Use **!settempo [minutos]** para mudar o intervalo de mensagens automáticas. (somente admins)
 - Geral: Onde você pode interagir comigo e outros membros.
 - Fundamentos: Aqui você pode revisar todo o conteúdo do curso.
 -Música: para ouvir música basta digitar: m!play (nome da música)
@@ -218,52 +250,83 @@ dê uma olhada nos canais abaixo:
 `);
         return;
     }
-    
     
-    if (mensagemMinuscula.startsWith('!limpar_bot')) {
-        
-      
-        const temPermissao = message.member.permissions.has(PermissionsBitField.Flags.ManageMessages) || message.member.id === message.guild.ownerId;
+  
+    if (mensagemMinuscula.startsWith('!settempo')) {
+     
+        const temPermissao = message.member.permissions.has(PermissionsBitField.Flags.ManageGuild) || message.member.id === message.guild.ownerId;
         
         if (!temPermissao) {
-            return message.reply('Desculpe, este comando é restrito a quem pode Gerenciar Mensagens.');
+            return message.reply('❌ Você não tem permissão para alterar o tempo de envio. Este comando é restrito a quem pode Gerenciar Servidor.');
         }
 
+        const args = message.content.split(/\s+/); 
+        const minutos = parseInt(args[1]); 
         
-        message.delete().catch(() => {});
+       
+        if (args[1] === 'reset') {
+            intervaloAtualMs = INTERVALO_PADRAO_MS;
+            iniciarLoopMensagens();
+            return message.reply(`✅ Intervalo resetado! Agora o bot envia mensagens a cada **${INTERVALO_PADRAO_MS / 3600000} horas**.`);
+        }
         
-        
-        const amountToFetch = 100; 
+       
+        if (isNaN(minutos) || minutos < 1) {
+            return message.reply('⚠️ Formato inválido. Use **!settempo [minutos]** (ex: `!settempo 10` para 10 minutos). O mínimo é 1 minuto.');
+        }
 
-        message.channel.messages.fetch({ limit: amountToFetch })
-            .then(messages => {
-              
-                const botMessages = messages.filter(m => m.author.id === message.client.user.id);
-                
-                if (botMessages.size === 0) {
-                    return message.channel.send('Não encontrei mensagens do bot nas últimas 100 para apagar.')
-                        .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000));
-                }
-               
-                message.channel.bulkDelete(botMessages)
-                    .then(deleted => {
-                        message.channel.send(`✅ Apaguei **${deleted.size}** mensagens minhas neste canal.`)
-                            // Apaga a confirmação após 5 segundos
-                            .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000));
-                    })
-                    .catch(error => {
-                        console.error('Erro ao tentar bulkDelete:', error);
-                        message.channel.send('❌ Erro: Não consegui apagar. Lembre-se que o Discord só permite bulk delete para mensagens com menos de 14 dias.');
-                    });
-            })
-            .catch(error => {
-                console.error('Erro ao buscar mensagens:', error);
-                message.channel.send('❌ Erro: Não consegui buscar as mensagens para limpeza.');
-            });
-            
+        intervaloAtualMs = minutos * 60 * 1000; 
+        iniciarLoopMensagens();
+        
+        message.reply(`✅ Novo intervalo de mensagens configurado para **${minutos} minutos**! O bot voltará a enviar no novo tempo.`);
         return;
     }
-    
+    
+    
+    if (mensagemMinuscula.startsWith('!limpar_bot')) {
+        
+      
+        const temPermissao = message.member.permissions.has(PermissionsBitField.Flags.ManageMessages) || message.member.id === message.guild.ownerId;
+        
+        if (!temPermissao) {
+            return message.reply('Desculpe, este comando é restrito a quem pode Gerenciar Mensagens.');
+        }
+
+        
+        message.delete().catch(() => {});
+        
+        
+        const amountToFetch = 100; 
+
+        message.channel.messages.fetch({ limit: amountToFetch })
+            .then(messages => {
+              
+                const botMessages = messages.filter(m => m.author.id === message.client.user.id);
+                
+                if (botMessages.size === 0) {
+                    return message.channel.send('Não encontrei mensagens do bot nas últimas 100 para apagar.')
+                        .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000));
+                }
+               
+                message.channel.bulkDelete(botMessages)
+                    .then(deleted => {
+                        message.channel.send(`✅ Apaguei **${deleted.size}** mensagens minhas neste canal.`)
+                            // Apaga a confirmação após 5 segundos
+                            .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000));
+                    })
+                    .catch(error => {
+                        console.error('Erro ao tentar bulkDelete:', error);
+                        message.channel.send('❌ Erro: Não consegui apagar. Lembre-se que o Discord só permite bulk delete para mensagens com menos de 14 dias.');
+                    });
+            })
+            .catch(error => {
+                console.error('Erro ao buscar mensagens:', error);
+                message.channel.send('❌ Erro: Não consegui buscar as mensagens para limpeza.');
+            });
+            
+        return;
+    }
+    
  
     if (mensagemMinuscula === '!convite' || mensagemMinuscula === '/convite') {
         
