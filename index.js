@@ -184,7 +184,7 @@ client.on('clientReady', async () => {
         } else {
             console.log('Canal "geral" não encontrado. Verifique o nome do canal.');
         }
-    }, 3600000); 
+    }, 10800); 
 });
 
 client.on('guildMemberAdd', member => {
