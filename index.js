@@ -129,8 +129,7 @@ const mensagensAleatorias = [
     "O React é uma biblioteca, não um framework completo. Ele te dá mais liberdade.",
     "Não tenha medo de deletar código que não é mais usado. Código limpo é código menor.",
     "Cada erro resolvido é uma habilidade a mais na sua caixa de ferramentas.",
-    "O futuro é promissor para quem domina o JavaScript e o React. Avance!",
-    "Continue codificando, e um dia você vai olhar para trás e se orgulhar do que fez."
+    "O futuro é promissor para quem domina o JavaScript e o React. Avance!"
 ];
 
 let frasesDisponiveis = [...mensagensAleatorias];
@@ -154,8 +153,8 @@ function iniciarLoopMensagens() {
     }
 
     
-    const horasLegiveis = (intervaloAtualMs / (60 * 60 * 1000)).toFixed(2);
-    
+    const horasLegiveis = (intervaloAtualMs / (60 * 60 * 1000)).toFixed(2);
+    
     loopMensagens = setInterval(() => {
         console.log('Tentando enviar uma mensagem...');
         const canal = client.channels.cache.find(c => c.name === NOME_DO_CANAL_CONVITE);
@@ -240,19 +239,41 @@ client.on('messageCreate', message => {
     
     if (mensagemMinuscula === '!ajuda' || mensagemMinuscula === '/ajuda') {
     
-        message.reply(`Olá! Eu sou o ReactBot, seu assistente no servidor. 
+        const helpEmbed = new EmbedBuilder()
+            .setColor('#61DAFB')
+            .setTitle('🤖 Painel de Ajuda do ReactBot')
+            .setDescription(`Olá! Eu sou o ReactBot, seu assistente no servidor. Abaixo estão todos os meus comandos úteis.`)
+            .setThumbnail(message.client.user.displayAvatarURL())
+            .addFields(
+                { 
+                    name: '⚙️ Comandos de Configuração (Apenas Admins)', 
+                    value: `
+**!settempo [horas]**: Muda o intervalo de mensagens automáticas.
+Ex: \`!settempo 3\` para 3 horas. Use \`!settempo 0.5\` para 30 minutos.
+**!settempo reset**: Volta ao padrão de 3 horas.
+**!convite** ou **/convite**: Gera/Exibe o link permanente do servidor.
+**!limpar_bot**: Remove minhas últimas mensagens de spam do canal.
+                    ` 
+                },
+                { 
+                    name: '📚 Canais de Estudo e Interação', 
+                    value: `
+- **Geral**: Onde você pode interagir comigo e outros membros.
+- **Fundamentos**: Revise todo o conteúdo do curso.
+                    `
+                },
+                { 
+                    name: '🎵 Comando de Música', 
+                    value: `
+**m!play (nome da música)**: Para ouvir música.
+*Obs: Você precisa estar no canal de voz geral para funcionar!*
+                    ` 
+                }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Seja um mestre React!', iconURL: message.client.user.displayAvatarURL() });
 
-dê uma olhada nos canais abaixo:
-- Convites: Digite /convite ou !convite (somente admins) para obter o link permanente.
-- Limpeza: Digite !limpar_bot para remover minhas mensagens de spam. (somente admins)
-- **Config**: Use **!settempo [horas]** para mudar o intervalo de mensagens automáticas. (somente admins)
-    * Ex: \`!settempo 3\` para 3 horas. Use \`!settempo 0.5\` para 30 minutos.
-    * Use \`!settempo reset\` para voltar ao padrão de 3 horas.
-- Geral: Onde você pode interagir comigo e outros membros.
-- Fundamentos: Aqui você pode revisar todo o conteúdo do curso.
--Música: para ouvir música basta digitar: m!play (nome da música)
-*Obs: precisa estar no canal de voz geral para funcionar!   
-`);
+        message.reply({ embeds: [helpEmbed] });
         return;
     }
     
@@ -281,10 +302,10 @@ dê uma olhada nos canais abaixo:
             return message.reply('⚠️ Formato inválido. Use **!settempo [horas]** (ex: `!settempo 3`). O valor deve ser um número positivo (maior que 0).');
         }
 
-        
-        if (horas * 60 * 60 * 1000 < 60000) {
-             return message.reply('🛑 O intervalo mínimo permitido é de **1 minuto** (`!settempo 0.0166`) para não sobrecarregar o Discord.');
-        }
+        
+        if (horas * 60 * 60 * 1000 < 60000) {
+             return message.reply('🛑 O intervalo mínimo permitido é de **1 minuto** (`!settempo 0.0166`) para não sobrecarregar o Discord.');
+        }
 
       
         intervaloAtualMs = horas * 60 * 60 * 1000; 
@@ -323,7 +344,7 @@ dê uma olhada nos canais abaixo:
                 message.channel.bulkDelete(botMessages)
                     .then(deleted => {
                         message.channel.send(`✅ Apaguei **${deleted.size}** mensagens minhas neste canal.`)
-                            // Apaga a confirmação após 5 segundos
+                            
                             .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000));
                     })
                     .catch(error => {
